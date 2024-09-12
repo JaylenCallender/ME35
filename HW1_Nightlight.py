@@ -1,3 +1,4 @@
+# Write your code here :-)
 import machine, time, neopixel, asyncio
 from machine import Pin, PWM
 
@@ -49,8 +50,8 @@ class Nightlight:
                     await asyncio.sleep(0.01)
 
     # Controls the buzzer and neopixel based on a button press. 
-    # This button press will make the buzzer beep, but also change 
-    # the neopixel color based on the state of the button (flag)
+    # This button press will make the buzzer beep a tune, but also change 
+    # the neopixel color in a pattern, based on the state of the button (flag)
     async def buzzer_cycle(self):
         #set base neopixel color
         self.neo[0] = (255, 0, 0)
@@ -58,22 +59,60 @@ class Nightlight:
         while not self.mqtt_flag:
             #checks if button has been pressed
             if self.flag:
-                #change neopixel color and play buzzer
-                self.neo[0] = (0, 255, 0)
-                self.neo.write()
-                self.buzzer.duty_u16(1000)
-                await asyncio.sleep(1)
-
-                #end routine
-                self.buzzer.duty_u16(0)
-                self.neo[0] = (255, 0, 0)
-                self.neo.write()
+                #call function button_routine
+                routine = asyncio.create_task(self.button_routine())
+                await routine
 
                 #resets button
                 self.flag = False
             else:
                 self.buzzer.duty_u16(0)
             await asyncio.sleep(1)  # Check flag status every 1 second
+   
+    #Called by button_cycle, isolates the routine to its own function for code cleanliness
+    async def button_routine(self):
+        sleep_time = 0.3
+        
+        self.neo[0] = (255, 165, 0)
+        self.neo.write()
+        self.buzzer.freq(262)
+        self.buzzer.duty_u16(32768)
+        await asyncio.sleep(sleep_time)
+        
+        self.neo[0] = (255, 255, 0)
+        self.neo.write()
+        self.buzzer.freq(294)
+        await asyncio.sleep(sleep_time)
+        
+        self.neo[0] = (0, 255, 0)
+        self.neo.write()
+        self.buzzer.freq(330)
+        await asyncio.sleep(sleep_time)
+        
+        self.neo[0] = (0, 0, 255)
+        self.neo.write()
+        self.buzzer.freq(349)
+        await asyncio.sleep(sleep_time)
+        
+        self.neo[0] = (75, 0, 130)
+        self.neo.write()
+        self.buzzer.freq(330)
+        await asyncio.sleep(sleep_time)
+        
+        self.neo[0] = (238, 130, 238)
+        self.neo.write()
+        self.buzzer.freq(294)
+        await asyncio.sleep(sleep_time)
+        
+        self.neo[0] = (255, 0, 0)
+        self.neo.write()
+        self.buzzer.freq(262)
+        await asyncio.sleep(sleep_time)
+        
+        #end routine
+        self.buzzer.duty_u16(0)
+        self.neo[0] = (255, 0, 0)
+        self.neo.write()
     
     #Toggles flag to initiate buzzer and neopixel routine when the button has been pressed 
     async def toggle_flag(self):
